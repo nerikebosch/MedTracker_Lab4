@@ -71,6 +71,18 @@ class MedicationViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertIn("error", response.data)
 
+    @patch("medtrackerapp.models.Medication.fetch_external_info")
+    def test_get_external_info_success(self, mock_fetch):
+
+        mock_fetch.return_value = {"results": {"name": "Aspirin", "source": "OpenFDA"}}
+
+        response = self.client.get(self.external_info_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("results", response.data)
+        self.assertEqual(response.data["results"]["source"], "OpenFDA")
+        mock_fetch.assert_called_once()
+
 
 class DoseLogViewTests(APITestCase):
 
@@ -79,7 +91,6 @@ class DoseLogViewTests(APITestCase):
         self.log_url = reverse("doselog-list")
         self.filter_url = reverse("doselog-filter-by-date")
 
-        # Create a set of logs for date filtering
         today = make_aware(datetime.now())
         yesterday = today - timedelta(days=1)
         tomorrow = today + timedelta(days=1)
@@ -140,3 +151,4 @@ class DoseLogViewTests(APITestCase):
             "Both 'start' and 'end' query parameters are required and must be valid dates.",
             response.data["error"]
         )
+
