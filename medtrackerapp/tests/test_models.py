@@ -79,7 +79,7 @@ class MedicationModelTests(TestCase):
         self.assertEqual(result, 0.0)
 
     def test_adherence_rate_over_period_rate(self):
-        med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=67)
+        med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
         start_date = date(2025, 11, 24)
         end_date = date(2025, 11, 26)
 
