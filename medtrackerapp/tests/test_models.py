@@ -54,7 +54,7 @@ class MedicationModelTests(TestCase):
 
 
     def test_expected_doses_correct_dose_count(self):
-        med = Medication.objects.create(name="As", dosage_mg=100, prescribed_per_day=2)
+        med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
         days = 3
         dose_count = med.expected_doses(days)
 
@@ -79,7 +79,7 @@ class MedicationModelTests(TestCase):
         self.assertEqual(result, 0.0)
 
     def test_adherence_rate_over_period_rate(self):
-        med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
+        med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=67)
         start_date = date(2025, 11, 24)
         end_date = date(2025, 11, 26)
 
