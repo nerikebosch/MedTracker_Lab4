@@ -54,20 +54,30 @@ class MedicationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="expected-doses")
     def expected_doses(self, request, pk=None):
         """
-        Calculate expected doses for a specific medication over a given number of days.
+        Calculate expected doses for a specific medication.
 
-        Endpoint: GET /api/medications/{id}/expected-doses/?days=X
+        Args:
+            request: HTTP request containing required 'days' query parameter.
+            pk: Primary key of the medication.
+
+        Returns:
+            Response:
+                - 200 OK: JSON with medication_id, days, and expected_doses.
+                - 400 BAD REQUEST: If 'days' is missing, invalid, or calculation fails.
+
+        Example:
+            GET /api/medications/1/expected-doses/?days=5
         """
-        days_param = request.query_params.get("days")
+        days_str = request.query_params.get("days")
 
-        if days_param is None:
+        if days_str is None:
             return Response(
                 {"error": "The 'days' parameter is required."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            days = int(days_param)
+            days = int(days_str)
             if days <= 0:
                 raise ValueError
         except ValueError:
@@ -79,11 +89,11 @@ class MedicationViewSet(viewsets.ModelViewSet):
         medication = self.get_object()
 
         try:
-            count = medication.expected_doses(days)
+            total_doses = medication.expected_doses(days)
             return Response({
                 "medication_id": medication.id,
                 "days": days,
-                "expected_doses": count
+                "expected_doses": total_doses
             }, status=status.HTTP_200_OK)
 
         except ValueError as e:
