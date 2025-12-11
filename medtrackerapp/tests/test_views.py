@@ -152,3 +152,53 @@ class DoseLogViewTests(APITestCase):
             response.data["error"]
         )
 
+
+class MedicationExpectedDosesViewTests(APITestCase):
+    def setUp(self):
+
+        self.medication = Medication.objects.create(
+            name="Antibiotics",
+            dosage_mg=500,
+            prescribed_per_day=3
+        )
+
+        self.url = reverse("medication-expected-doses", kwargs={"pk": self.medication.pk})
+
+    def test_expected_doses_valid_request(self):
+        days = 10
+        response = self.client.get(self.url, {'days': days})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify structure
+        self.assertIn('medication_id', response.data)
+        self.assertIn('days', response.data)
+        self.assertIn('expected_doses', response.data)
+
+        # Verify calculation (3 per day * 10 days = 30)
+        self.assertEqual(response.data['expected_doses'], 30)
+        self.assertEqual(response.data['medication_id'], self.medication.id)
+
+    def test_expected_doses_missing_parameter(self):
+        response = self.client.get(self.url)  # No query params
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_expected_doses_invalid_parameter_type(self):
+        response = self.client.get(self.url, {'days': 'ten'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_expected_doses_negative_integer(self):
+        response = self.client.get(self.url, {'days': -5})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_expected_doses_model_value_error(self):
+        # Create a medication that triggers ValueError (prescribed_per_day=0)
+        bad_med = Medication.objects.create(
+            name="BadConfigMed",
+            dosage_mg=100,
+            prescribed_per_day=0
+        )
+        url = reverse("medication-expected-doses", kwargs={"pk": bad_med.pk})
+
+        response = self.client.get(url, {'days': 5})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
