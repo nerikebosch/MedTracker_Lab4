@@ -160,13 +160,33 @@ class DoseLogViewSet(viewsets.ModelViewSet):
 
 
 class NoteViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for viewing and managing doctor's notes.
+
+    Allows users to list, retrieve, create, and delete notes.
+    Updates (PUT/PATCH) are explicitly disabled to maintain
+    historical integrity of doctor's notes.
+
+    Endpoints:
+        - GET /notes/ — list all notes
+        - POST /notes/ — create a new note
+        - GET /notes/{id}/ — retrieve a specific note
+        - DELETE /notes/{id}/ — delete a specific note
+    """
+
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
     def update(self, request, *args, **kwargs):
+        """
+        Disable full updates (PUT).
+        """
 
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response({"detail": "Updated notes is not supported"},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def partial_update(self, request, *args, **kwargs):
+        """
+        Disable partial updates (PATCH).
+        """
 
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response({"detail": "Updating notes is not supported"},status=status.HTTP_405_METHOD_NOT_ALLOWED)
