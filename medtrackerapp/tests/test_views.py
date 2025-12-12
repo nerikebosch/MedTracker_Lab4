@@ -213,7 +213,7 @@ class NoteViewTests(APITestCase):
         self.note = Note.objects.create(
             medication=self.med,
             text="Take with food",
-            created_at= timezone.now().date()
+            created_at= datetime.now(),
         )
         self.detail_url = reverse("note-detail", kwargs={"pk": self.note.pk})
 
