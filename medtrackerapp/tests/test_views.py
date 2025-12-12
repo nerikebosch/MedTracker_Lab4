@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from django.utils.timezone import make_aware
@@ -202,3 +202,55 @@ class MedicationExpectedDosesViewTests(APITestCase):
 
         response = self.client.get(url, {'days': 5})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class NoteViewTests(APITestCase):
+    def setUp(self):
+        self.med = Medication.objects.create(name="Xanax", dosage_mg=1, prescribed_per_day=3)
+        self.list_url = reverse("note-list")
+
+        from medtrackerapp.models import Note
+        self.note = Note.objects.create(
+            medication=self.med,
+            text="Take with food",
+            created_at= timezone.now().date()
+        )
+        self.detail_url = reverse("note-detail", kwargs={"pk": self.note.pk})
+
+    def test_list_notes(self):
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['text'], "Take with food")
+
+    def test_create_note(self):
+        data = {
+            "medication": self.med.id,
+            "text": "Patient feeling better",
+            "created_at": "2025-12-01"
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['text'], "Patient feeling better")
+
+    def test_retrieve_note(self):
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['text'], "Take with food")
+
+    def test_delete_note(self):
+        response = self.client.delete(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response_get = self.client.get(self.detail_url)
+        self.assertEqual(response_get.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_note_not_allowed(self):
+        data = {"text": "Updated text"}
+
+        response_put = self.client.put(self.detail_url, data)
+        self.assertEqual(response_put.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        response_patch = self.client.patch(self.detail_url, data)
+        self.assertEqual(response_patch.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
