@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from medtrackerapp.models import Medication, DoseLog
 from django.utils import timezone
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 import datetime
 
 
@@ -100,3 +100,22 @@ class MedicationModelTests(TestCase):
         dose_log = DoseLog.objects.create(medication=med, taken_at= taken_time, was_taken=True)
 
         self.assertEqual(str(dose_log), f"Aspirin at {timezone.localtime(taken_time).strftime('%Y-%m-%d %H:%M')} - Taken")
+
+
+class NoteModelTests(TestCase):
+    def test_create_note_success(self):
+        med = Medication.objects.create(name="Oxycodone", dosage_mg=10, prescribed_per_day=2)
+        from medtrackerapp.models import Note
+
+        note = Note.objects.create(medication=med, text="Patient reported dizziness.", created_at=date.today())
+
+        self.assertEqual(note.medication, med)
+        self.assertEqual(note.text, "Patient reported dizziness.")
+        self.assertTrue(note.created_at)
+
+    def test_str_returns_text_preview(self):
+        med = Medication.objects.create(name="Tylenol", dosage_mg=500, prescribed_per_day=4)
+        from medtrackerapp.models import Note
+        note = Note.objects.create(medication=med, text="Short note", created_at=date.today())
+        # We expect __str__ to return the text (or a part of it)
+        self.assertIn("Short note", str(note))
