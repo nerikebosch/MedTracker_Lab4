@@ -1,7 +1,6 @@
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from requests.exceptions import RequestException
-import logging
 
 from medtrackerapp.services import DrugInfoService
 
