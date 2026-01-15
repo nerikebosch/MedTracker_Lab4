@@ -22,4 +22,4 @@ class DoseLogSerializer(serializers.ModelSerializer):
 class NoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Note
-        fields = ['id', 'medication', 'text', 'created_at']
+        fields = ["id", "medication", "text", "created_at"]

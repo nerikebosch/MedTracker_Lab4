@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.utils.dateparse import parse_date
 from .models import Medication, DoseLog, Note
 from .serializers import MedicationSerializer, DoseLogSerializer, NoteSerializer
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import SearchFilter
 
 
 class MedicationViewSet(viewsets.ModelViewSet):
@@ -23,6 +23,7 @@ class MedicationViewSet(viewsets.ModelViewSet):
         - DELETE /medications/{id}/ — delete a medication
         - GET /medications/{id}/info/ — fetch external drug info from OpenFDA
     """
+
     queryset = Medication.objects.all()
     serializer_class = MedicationSerializer
 
@@ -75,7 +76,7 @@ class MedicationViewSet(viewsets.ModelViewSet):
         if days_str is None:
             return Response(
                 {"error": "The 'days' parameter is required."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -85,24 +86,24 @@ class MedicationViewSet(viewsets.ModelViewSet):
         except ValueError:
             return Response(
                 {"error": "Days must be a positive integer."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         medication = self.get_object()
 
         try:
             total_doses = medication.expected_doses(days)
-            return Response({
-                "medication_id": medication.id,
-                "days": days,
-                "expected_doses": total_doses
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "medication_id": medication.id,
+                    "days": days,
+                    "expected_doses": total_doses,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except ValueError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DoseLogViewSet(viewsets.ModelViewSet):
@@ -122,6 +123,7 @@ class DoseLogViewSet(viewsets.ModelViewSet):
         - GET /logs/filter/?start=YYYY-MM-DD&end=YYYY-MM-DD —
           filter logs within a date range
     """
+
     queryset = DoseLog.objects.all()
     serializer_class = DoseLogSerializer
 
@@ -147,14 +149,17 @@ class DoseLogViewSet(viewsets.ModelViewSet):
 
         if not start or not end:
             return Response(
-                {"error": "Both 'start' and 'end' query parameters are required and must be valid dates."},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "Both 'start' and 'end' query parameters are required and must be valid dates."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        logs = self.get_queryset().filter(
-            taken_at__date__gte=start,
-            taken_at__date__lte=end
-        ).order_by("taken_at")
+        logs = (
+            self.get_queryset()
+            .filter(taken_at__date__gte=start, taken_at__date__lte=end)
+            .order_by("taken_at")
+        )
 
         serializer = self.get_serializer(logs, many=True)
         return Response(serializer.data)
@@ -174,8 +179,9 @@ class NoteViewSet(viewsets.ModelViewSet):
         - GET /notes/{id}/ — retrieve a specific note
         - DELETE /notes/{id}/ — delete a specific note
     """
+
     filter_backends = (SearchFilter,)
-    search_fields = ['medication__name']
+    search_fields = ["medication__name"]
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
@@ -184,11 +190,17 @@ class NoteViewSet(viewsets.ModelViewSet):
         Disable full updates (PUT).
         """
 
-        return Response({"detail": "Updated notes is not supported"},status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(
+            {"detail": "Updated notes is not supported"},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
     def partial_update(self, request, *args, **kwargs):
         """
         Disable partial updates (PATCH).
         """
 
-        return Response({"detail": "Updating notes is not supported"},status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(
+            {"detail": "Updating notes is not supported"},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )

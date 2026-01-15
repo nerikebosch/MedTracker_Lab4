@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from django.utils.timezone import make_aware
@@ -10,13 +10,18 @@ from rest_framework import status
 
 class MedicationViewTests(APITestCase):
     def setUp(self):
-        self.med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
+        self.med = Medication.objects.create(
+            name="Aspirin", dosage_mg=100, prescribed_per_day=2
+        )
         self.med_data = {"name": "Aspirin", "dosage_mg": 100, "prescribed_per_day": 2}
         self.list_url = reverse("medication-list")
         self.medication = Medication.objects.create(**self.med_data)
-        self.detail_url = reverse("medication-detail", kwargs={"pk": self.medication.pk})
-        self.external_info_url = reverse("medication-get-external-info", kwargs={"pk": self.medication.pk})
-
+        self.detail_url = reverse(
+            "medication-detail", kwargs={"pk": self.medication.pk}
+        )
+        self.external_info_url = reverse(
+            "medication-get-external-info", kwargs={"pk": self.medication.pk}
+        )
 
     def test_list_medications_valid_data(self):
         url = reverse("medication-list")
@@ -73,7 +78,6 @@ class MedicationViewTests(APITestCase):
 
     @patch("medtrackerapp.models.Medication.fetch_external_info")
     def test_get_external_info_success(self, mock_fetch):
-
         mock_fetch.return_value = {"results": {"name": "Aspirin", "source": "OpenFDA"}}
 
         response = self.client.get(self.external_info_url)
@@ -85,9 +89,10 @@ class MedicationViewTests(APITestCase):
 
 
 class DoseLogViewTests(APITestCase):
-
     def setUp(self):
-        self.medication = Medication.objects.create(name="Placebo", dosage_mg=0, prescribed_per_day=1)
+        self.medication = Medication.objects.create(
+            name="Placebo", dosage_mg=0, prescribed_per_day=1
+        )
         self.log_url = reverse("doselog-list")
         self.filter_url = reverse("doselog-filter-by-date")
 
@@ -106,7 +111,6 @@ class DoseLogViewTests(APITestCase):
         )
         self.detail_url = reverse("doselog-detail", kwargs={"pk": self.log_today.pk})
 
-
     def test_create_doselog_success(self):
         new_log_data = {
             "medication": self.medication.pk,
@@ -123,15 +127,18 @@ class DoseLogViewTests(APITestCase):
         start_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         end_date = datetime.now().strftime("%Y-%m-%d")
 
-        response = self.client.get(f"{self.filter_url}?start={start_date}&end={end_date}")
+        response = self.client.get(
+            f"{self.filter_url}?start={start_date}&end={end_date}"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)  # Should include yesterday's and today's log
+        self.assertEqual(
+            len(response.data), 2
+        )  # Should include yesterday's and today's log
         log_ids = [log["id"] for log in response.data]
         self.assertIn(self.log_yesterday.pk, log_ids)
         self.assertIn(self.log_today.pk, log_ids)
         self.assertNotIn(self.log_tomorrow.pk, log_ids)  # Should exclude tomorrow's log
-
 
     def test_create_doselog_invalid_medication_pk(self):
         invalid_data = {
@@ -149,71 +156,71 @@ class DoseLogViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
             "Both 'start' and 'end' query parameters are required and must be valid dates.",
-            response.data["error"]
+            response.data["error"],
         )
 
 
 class MedicationExpectedDosesViewTests(APITestCase):
     def setUp(self):
-
         self.medication = Medication.objects.create(
-            name="Antibiotics",
-            dosage_mg=500,
-            prescribed_per_day=3
+            name="Antibiotics", dosage_mg=500, prescribed_per_day=3
         )
 
-        self.url = reverse("medication-expected-doses", kwargs={"pk": self.medication.pk})
+        self.url = reverse(
+            "medication-expected-doses", kwargs={"pk": self.medication.pk}
+        )
 
     def test_expected_doses_valid_request(self):
         days = 10
-        response = self.client.get(self.url, {'days': days})
+        response = self.client.get(self.url, {"days": days})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verify structure
-        self.assertIn('medication_id', response.data)
-        self.assertIn('days', response.data)
-        self.assertIn('expected_doses', response.data)
+        self.assertIn("medication_id", response.data)
+        self.assertIn("days", response.data)
+        self.assertIn("expected_doses", response.data)
 
         # Verify calculation (3 per day * 10 days = 30)
-        self.assertEqual(response.data['expected_doses'], 30)
-        self.assertEqual(response.data['medication_id'], self.medication.id)
+        self.assertEqual(response.data["expected_doses"], 30)
+        self.assertEqual(response.data["medication_id"], self.medication.id)
 
     def test_expected_doses_missing_parameter(self):
         response = self.client.get(self.url)  # No query params
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_expected_doses_invalid_parameter_type(self):
-        response = self.client.get(self.url, {'days': 'ten'})
+        response = self.client.get(self.url, {"days": "ten"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_expected_doses_negative_integer(self):
-        response = self.client.get(self.url, {'days': -5})
+        response = self.client.get(self.url, {"days": -5})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_expected_doses_model_value_error(self):
         # Create a medication that triggers ValueError (prescribed_per_day=0)
         bad_med = Medication.objects.create(
-            name="BadConfigMed",
-            dosage_mg=100,
-            prescribed_per_day=0
+            name="BadConfigMed", dosage_mg=100, prescribed_per_day=0
         )
         url = reverse("medication-expected-doses", kwargs={"pk": bad_med.pk})
 
-        response = self.client.get(url, {'days': 5})
+        response = self.client.get(url, {"days": 5})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class NoteViewTests(APITestCase):
     def setUp(self):
-        self.med = Medication.objects.create(name="Xanax", dosage_mg=1, prescribed_per_day=3)
+        self.med = Medication.objects.create(
+            name="Xanax", dosage_mg=1, prescribed_per_day=3
+        )
         self.list_url = reverse("note-list")
 
         from medtrackerapp.models import Note
+
         self.note = Note.objects.create(
             medication=self.med,
             text="Take with food",
-            created_at= datetime.now(),
+            created_at=datetime.now(),
         )
         self.detail_url = reverse("note-detail", kwargs={"pk": self.note.pk})
 
@@ -222,22 +229,22 @@ class NoteViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['text'], "Take with food")
+        self.assertEqual(response.data[0]["text"], "Take with food")
 
     def test_create_note(self):
         data = {
             "medication": self.med.id,
             "text": "Patient feeling better",
-            "created_at": "2025-12-01"
+            "created_at": "2025-12-01",
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['text'], "Patient feeling better")
+        self.assertEqual(response.data["text"], "Patient feeling better")
 
     def test_retrieve_note(self):
         response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['text'], "Take with food")
+        self.assertEqual(response.data["text"], "Take with food")
 
     def test_delete_note(self):
         response = self.client.delete(self.detail_url)
