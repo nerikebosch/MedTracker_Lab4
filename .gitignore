@@ -1,0 +1,7 @@
+myenv
+
+/medtracker/__pycache__/
+../__pycache__/
+__pycache__/
+/medtrackerapp/migrations/__pycache__/
+*.pyc
