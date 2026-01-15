@@ -4,7 +4,6 @@ from django.test import TestCase
 from medtrackerapp.models import Medication, DoseLog
 from django.utils import timezone
 from datetime import timedelta, date, datetime
-import datetime
 
 
 class MedicationModelTests(TestCase):
