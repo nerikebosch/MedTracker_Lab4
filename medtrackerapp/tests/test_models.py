@@ -96,8 +96,8 @@ class MedicationModelTests(TestCase):
         start_date = date(2025, 11, 24)
         end_date = date(2025, 11, 26)
 
-        dt1 = timezone.make_aware(datetime.datetime(2025, 11, 24))
-        dt2 = timezone.make_aware(datetime.datetime(2025, 11, 25))
+        dt1 = timezone.make_aware(datetime(2025, 11, 24))
+        dt2 = timezone.make_aware(datetime(2025, 11, 25))
 
         DoseLog.objects.create(medication=med, taken_at=dt1 - timedelta(hours=30))
         DoseLog.objects.create(medication=med, taken_at=dt2 - timedelta(hours=1))
